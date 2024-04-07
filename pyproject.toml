@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "eat-right-backend"
+version = "0.1.0"
+description = "API for eat-right application"
+authors = ["Chibuikem Iroaganachi"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.110.1"
+uvicorn = "^0.29.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
