@@ -1,15 +1,20 @@
 [tool.poetry]
 name = "eat-right-backend"
 version = "0.1.0"
-description = "API for eat-right application"
-authors = ["Chibuikem Iroaganachi"]
-license = "MIT"
+description = ""
+authors = ["fortune1237 <okolofortune4@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-fastapi = "^0.110.1"
+passlib = {extras = ["cryptcontext"], version = "^1.7.4"}
 uvicorn = "^0.29.0"
+fastapi = "^0.110.1"
+pydantic = {extras = ["email"], version = "^2.6.4"}
+sqlmodel = "^0.0.16"
+python-jose = "^3.3.0"
+python-multipart = "^0.0.9"
+utils = "^1.0.2"
 
 
 [build-system]
