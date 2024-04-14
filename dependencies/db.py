@@ -6,14 +6,20 @@ from typing import Generator
 from sqlmodel import Session, create_engine, SQLModel, select
 from models.user_model import User
 
-# Database configuration
+"""
+Database configuration
+"""
 sqlite_file_name = "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
-# Create the SQLite engine
+"""
+Create the SQLite engine
+"""
 engine = create_engine(sqlite_url)
 
-# Create all tables in the database
+"""
+Create all tables in the database
+"""
 SQLModel.metadata.create_all(engine)
 
 def get_db() -> Generator[Session, None, None]:

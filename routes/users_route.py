@@ -27,7 +27,10 @@ async def register(
     Returns:
         UserCreate: The registered user data.
     """
-    # Hash the password
+    
+    """
+    Hash the password
+    """
     user.password = get_password_hash(user.password)
     new_user = User(**user.dict())
     db.add(new_user)
@@ -53,7 +56,10 @@ async def login(
     Raises:
         HTTPException: If the email or password is incorrect.
     """
-    # Get user by email
+   
+    """
+    Get user by email
+    """
     user = authenticate(session=db, email=form_data.username, password=form_data.password)
     if not user:
         raise HTTPException(status_code=400, detail="Incorrect email or password")
