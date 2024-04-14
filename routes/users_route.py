@@ -1,14 +1,12 @@
-from fastapi import APIRouter
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, select
+from sqlmodel import Session
 from config import ACCESS_TOKEN_EXPIRE_MINUTES
 from dependencies.db import get_db
 from models.user_model import UserCreate, User, Token
 from typing import Annotated
 from fastapi.security import OAuth2PasswordRequestForm
-from utils import get_password_hash, create_access_token
-from datetime import timedelta
-from utils import authenticate
+from utils import get_password_hash, create_access_token, authenticate
+from datetime import datetime, timedelta
 
 router = APIRouter()
 
@@ -27,16 +25,20 @@ async def register(
     Returns:
         UserCreate: The registered user data.
     """
-    
-    """
-    Hash the password
-    """
+    # Check age
+    dob = datetime.strptime(user.date_of_birth, "%Y-%m-%d")
+    eighteen_years_ago = datetime.now() - timedelta(days=365.25*18)
+    if dob > eighteen_years_ago:
+        raise HTTPException(status_code=400, detail="User must be 18 years or older to register")
+
+    # Hash the password
     user.password = get_password_hash(user.password)
     new_user = User(**user.dict())
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
     return user
+
 
 @router.post("/login", tags=["login"])
 async def login(

@@ -9,7 +9,8 @@ from config import ALGORITHM, SECRET_KEY
 from passlib.context import CryptContext
 from dependencies.db import get_user_by_email
 from sqlmodel import Session
-from models.user_model import User
+from models.user_model import User  # Check the module name's case
+
 
 # Initialize the password context for hashing and verifying passwords
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated="auto")
