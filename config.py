@@ -1,21 +1,11 @@
-"""
-Security configurations for the application.
+import secrets
+from pydantic_settings import BaseSettings
 
-This module contains the security-related configurations for the application,
-including the secret key, algorithm, and access token expiration time.
-"""
+class Settings(BaseSettings):
+    SECRET_KEY: str = secrets.token_urlsafe(32)
+    ALGORITHM: str = "HS256"
+    API_V1_STR: str = "/api/v1"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 
+    RESET_PASSWORD: str = secrets.token_urlsafe(32)
 
-"""
-Secret key used for generating and verifying tokens
-"""
-SECRET_KEY = "a0f087d8449cd0e3b2f27877d41bb02952ce4342893271a6dd0e620403b620e2"
-
-"""
-Algorithm used for generating and verifying tokens
-"""
-ALGORITHM = "HS256"
-
-"""
-# Number of minutes after which the access token will expire
-"""
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+settings = Settings() 

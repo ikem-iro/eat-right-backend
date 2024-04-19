@@ -1,41 +1,25 @@
-"""
-This module contains database-related utilities and functions.
-"""
-
+# This module contains database-related utilities and functions.
 from typing import Generator
 from sqlmodel import Session, create_engine, SQLModel, select
 from models.user_model import User  # Update the import statement
 
 
-"""
-Database configuration
-"""
+
+# Database configuration
+
 sqlite_file_name = "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
-"""
-Create the SQLite engine
-"""
+
+# Create the SQLite engine
+
 engine = create_engine(sqlite_url)
 
-"""
-Create all tables in the database
-"""
+
+# Create all tables in the database
+
 SQLModel.metadata.create_all(engine)
 
-def get_db() -> Generator[Session, None, None]:
-    """
-    Get a database session.
-
-    This function creates a new database session and yields it for use in
-    other parts of the application. The session is automatically closed
-    after the context manager exits.
-
-    Yields:
-        Session: A database session instance.
-    """
-    with Session(engine) as session:
-        yield session
 
 def get_user_by_email(*, session: Session, email: str) -> User | None:
     """
