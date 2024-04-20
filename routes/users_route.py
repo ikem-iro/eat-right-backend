@@ -1,15 +1,16 @@
 from getpass import getuser
 from dependencies.deps import get_current_user
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session
+from sqlmodel import Session,select
 from config import settings
 from dependencies.deps import SessionDep, reusable_oauth2
-from models.user_model import UserCreate, User, Token, UserLogin, ForgetPasswordRequest, ResestForgetPassword
+from models.user_model import UserCreate, User, Token, UserLogin, ForgetPasswordRequest, ResestForgetPassword, Prompt
 from utils import create_reset_password_token, get_password_hash, create_access_token, authenticate, is_token_revoked, revoke_token, decode_reset_password_token
-from datetime import timedelta
+from datetime import timedelta, datetime
 from models.contact_model import ContactUs
 from models.review_model import ReviewCreate, Review    
 from utils import get_user_by_email
+import openai
 
 router = APIRouter(prefix="/api/v1/users")
 
@@ -63,6 +64,33 @@ async def login(
 
 
 
+@router.post("/delete-user")
+async def deleteUser(
+    db: SessionDep 
+):
+ 
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    statement = select(User).where(User.last_active_date > thirty_days_ago)
+    inactive_users = db.exec(statement).all()
+    for inactive_user in inactive_users:
+        db.delete(inactive_user)
+        db.commit()
+    return {"message": "Inactive accounts deleted", "deleted_usernames": inactive_users}
+
+
+
+@router.put("/update_activity/")
+def update_activity(username: str, db: SessionDep):
+    user = db.exec(select(User).where(User.username == username)).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.last_active_date = datetime.utcnow()
+    user.is_active = True
+
+    db.commit()
+    return {"message": "User activity updated"}
 
 @router.post("/contact-us", tags=["contact"], summary="Submit a contact us request")
 async def contact_us(contact: ContactUs):
@@ -157,3 +185,20 @@ async def reset_password( rfp: ResestForgetPassword, db: SessionDep):
     except:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                              detail="Invalid Token")
+
+
+
+@router.post("/user_prompt")
+def user_prompt(text: Prompt):
+    openai.api_key = settings.OPENAI_API_KEY
+    prompt = text.text
+
+    response = openai.chat.completions.create(
+        model=settings.MODEL,
+        messages=[{ "role": "user", "content": prompt }],
+        max_tokens = 1024,
+        temperature= 0.2
+    )
+    message = response.choices[0].message.content
+
+    return {"message": message}

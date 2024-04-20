@@ -2,6 +2,7 @@ from sqlmodel import SQLModel, Field, Column, VARCHAR
 from pydantic import BaseModel, EmailStr, validator 
 import re
 from enum import Enum
+from datetime import datetime
 import secrets
 
 class UserRole(str, Enum):
@@ -60,6 +61,7 @@ class User(UserCreate, table=True):
     id: int = Field(primary_key=True)
     is_email_verified: bool = Field(default=False)
     verification_token: str = Field(default="")
+    last_active_date: datetime = Field(default_factory=datetime.utcnow)
 
 class Token(SQLModel):
     access_token: str
@@ -82,3 +84,7 @@ class SuccessMessage(BaseModel):
     success: bool
     status_coode: int
     message: str
+
+
+class Prompt(BaseModel):
+    text: str
