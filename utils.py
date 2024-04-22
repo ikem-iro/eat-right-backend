@@ -7,14 +7,18 @@ from typing import Any, List
 from config import settings
 from pydantic import ValidationError
 from jose import jwt, JWTError
-from models.user_model import TokenData
+from models.user_model import TokenData, User
 from passlib.context import CryptContext
 from dependencies.db import get_user_by_email
 from sqlmodel import Session
 from fastapi import HTTPException, status
 from models.user_model import User  
 from models.review_model import Review, ReviewCreate
-
+import emails
+from jinja2 import Template
+from sqlmodel import select
+from dataclasses import dataclass
+from pathlib import Path
 # Initialize the password context for hashing and verifying passwords
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated="auto")
 
@@ -67,6 +71,22 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     return pwd_context.verify(plain_password, hashed_password)
 
+def create_token(subject: str | Any, type_ops: str):
+    if type_ops == "verify":
+        hours = settings.EMAIL_VERIFY_EMAIL_EXPIRE_MINUTES
+    elif type_ops == "reset":
+        hours = settings.EMAIL_RESET_PASSWORD_EXPIRE_MINUTES
+    elif type_ops == "access":
+        hours = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+
+    expire = datetime.utcnow() + timedelta(
+        hours=hours
+    )
+    to_encode = {"exp": expire, "sub": str(subject)}
+    encoded_jwt = jwt.encode(
+        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
+    )
+    return encoded_jwt
 
 def verify_token_access(token: str):
     """
@@ -281,3 +301,82 @@ def decode_reset_password_token(token: str):
     email: str = payload["sub"]
     return email
    
+
+def send_email(email_to: str, subject: str, html_content: str):
+    message = emails.Message(
+        subject=subject, html=html_content, mail_from=settings.EMAILS_FROM_NAME
+    )
+    smtp_options = {
+        "host": settings.SMTP_HOST,
+        "port": settings.SMTP_PORT,
+        "user": settings.SMTP_USER,
+        "password": settings.SMTP_PASSWORD,
+    }
+    if settings.SMTP_TLS:
+        smtp_options["tls"] = True
+    elif settings.SMTP_SSL:
+        smtp_options["ssl"] = True
+    response = message.send(to=email_to, smtp=smtp_options)
+
+
+
+
+def get_user_by_email(*, session: Session, email: str) -> User | None:
+    """
+    Get a user by email address.
+
+    Args:
+        session (Session): The database session instance.
+        email (str): The email address of the user.
+
+    Returns:
+        User | None: The user object if found, or None if not found.
+    """
+    statement = select(User).where(User.email == email)
+    session_user = session.exec(statement).first()
+    return session_user
+
+
+
+def verify_token(token: str) -> str | None:
+    try:
+        decoded_token = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=settings.ALGORITHM
+        )  # noqa
+        print(decoded_token, "decoded_token")
+        return str(decoded_token["sub"])
+    except JWTError:
+        return None
+
+
+@dataclass
+class EmailData:
+    html_content: str
+    subject: str
+
+
+def render_email_template(*, template_name: str, context: dict[str, Any]) -> str:
+    template_str = (
+        Path(__file__).parent / "email-templates" / "build" / template_name
+    ).read_text()
+    html_content = Template(template_str).render(context)
+    return html_content
+
+
+def generate_reset_password_email(email_to: str, email: str, token: str):
+    project_name = settings.PROJECT_NAME
+    subject = f"{project_name} - Password recovery for user {email}"
+    link = f"{settings.FRONTEND_URL}reset-password?token={token}"
+
+    html_content = render_email_template(
+        template_name="reset_password.html",
+        context={
+            "project_name": settings.PROJECT_NAME,
+            "username": email,
+            "email": email_to,
+            "valid_hours": settings.EMAIL_RESET_PASSWORD_EXPIRE_MINUTES,
+            "link": link,
+        },
+    )
+    return EmailData(html_content=html_content, subject=subject)
+

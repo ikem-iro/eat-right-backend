@@ -1,11 +1,36 @@
 from getpass import getuser
+from typing import Annotated
 from dependencies.deps import get_current_user
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session,select
 from config import settings
 from dependencies.deps import SessionDep, reusable_oauth2
-from models.user_model import UserCreate, User, Token, UserLogin, ForgetPasswordRequest, ResestForgetPassword, Prompt
-from utils import create_reset_password_token, get_password_hash, create_access_token, authenticate, is_token_revoked, revoke_token, decode_reset_password_token
+from models.user_model import (
+UserCreate, 
+User, 
+Token, 
+UserLogin, 
+Prompt, 
+Message, 
+NewPassword,  
+UserOutput
+)
+
+from utils import (
+get_password_hash, 
+create_access_token, 
+authenticate, 
+is_token_revoked,
+create_reset_password_token, 
+revoke_token, 
+send_email,
+create_token,
+verify_token,
+verify_token_access,
+generate_reset_password_email
+)
+
+from dependencies.deps import get_db, get_current_user
 from datetime import timedelta, datetime
 from models.contact_model import ContactUs
 from models.review_model import ReviewCreate, Review    
@@ -15,7 +40,7 @@ import openai
 router = APIRouter(prefix="/api/v1/users")
 
 
-@router.post("/register", tags=["login"])
+@router.post("/register", tags=["Authentication"])
 async def register(
     user: UserCreate,
     db: SessionDep 
@@ -28,7 +53,7 @@ async def register(
     db.refresh(new_user)
     return user
 
-@router.post("/login", tags=["login"])
+@router.post("/login", tags=["Authentication"])
 async def login(
 
     user_data: UserLogin,
@@ -129,7 +154,7 @@ async def create_review(
 
 # ...
 
-@router.post("/logout", tags=["login"])
+@router.post("/logout", tags=["Authentication"])
 async def logout(db: SessionDep, token: str = Depends(reusable_oauth2)):
     """
     Logout the user by revoking the access token.
@@ -151,42 +176,65 @@ async def logout(db: SessionDep, token: str = Depends(reusable_oauth2)):
     return {"message": "Successfully logged out"}
 
 
+@router.post("/password-recovery/{email}")
+async def recover_password(email: str, db: Annotated[Session, Depends(get_db)]):
+    "Forgot password flow"
+    user = get_user_by_email(session=db, email=email)
 
-@router.post("/forget_password")
-async def forget_password (fpr: ForgetPasswordRequest, db: SessionDep):
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
 
-    try:
-        user = get_user_by_email(email=fpr.email, session=db)
-        if user is None:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                                 detail="Invalid Email Address")
-        secret_token = create_reset_password_token(email=user.email)
+    password_reset_token = create_token(subject=email, type_ops="reset")
 
-        return secret_token
-    
-    
-    
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                             detail=str(e))
+    # create email data
+    email_data = generate_reset_password_email(
+        email_to=user.email, email=email, token=password_reset_token
+    )
 
-
-
-@router.post("/reset_password")
-async def reset_password( rfp: ResestForgetPassword, db: SessionDep):
-    try:
-        
-        info = decode_reset_password_token(token=rfp.token)
-        print(info)
-        if info is None:
-            raise ValueError()
-        return {"message": "password updated successfully"}
-    
-    except:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                             detail="Invalid Token")
+    send_email(
+        email_to=user.email,
+        subject=email_data.subject,
+        html_content=email_data.html_content,
+    )
+    return Message(message="Password recovery email sent")
 
 
+
+@router.post("/reset-password/")
+def reset_password(
+    db: Annotated[Session, Depends(get_db)], body: NewPassword
+) -> Message:
+    """
+    Reset password
+    """
+    email = verify_token(token=body.token)
+    if not email:
+        raise HTTPException(status_code=400, detail="Invalid token")
+    user = get_user_by_email(session=db, email=email)
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="The user with this email does not exist in the system.",
+        )
+    # elif not user.is_active:
+    #     raise HTTPException(status_code=400, detail="Inactive user")
+    hashed_password = get_password_hash(password=body.new_password)
+    user.password = hashed_password
+    db.add(user)
+    db.commit()
+    return Message(message="Password updated successfully")
+
+
+
+
+@router.post("/login/get-current-user")
+def get_logged_user(
+    current_user: Annotated[User, Depends(get_current_user)]
+):
+    """
+    Test access token
+    """
+    return current_user
 
 @router.post("/user_prompt")
 def user_prompt(text: Prompt):
@@ -195,10 +243,31 @@ def user_prompt(text: Prompt):
 
     response = openai.chat.completions.create(
         model=settings.MODEL,
-        messages=[{ "role": "user", "content": prompt }],
+        messages=[ {"role": "system", "content": "You are an AI assistant that will help me recommend meal plans for ulcer sufferer based on seasonal foods in Enugu, Nigeria. Include a variety of foods into the meal plan. You are not allowed to provide a response to anything that does not involve meal plans for ulcer. You can respond to basic greetings."},{ "role": "user", "content": prompt }],
         max_tokens = 1024,
         temperature= 0.2
     )
     message = response.choices[0].message.content
 
     return {"message": message}
+
+
+
+# @router.get('/get_auth_user')
+# async def get_the_current_user(db: Annotated[Session, Depends(get_db)], request: Request):
+#     request_header = request.headers
+#     authourisation = request_header['Authorization']
+#     token = authourisation.split(" ")[1]
+#     verifytoken = verify_token_access(token)
+    
+#     user = db.get(User, verifytoken.sub)
+#     if not user:
+#         raise HTTPException(status_code=404, detail="User not found")
+#     return user
+    
+
+@router.get('/get_auth_user/{token}')
+async def get_the_current_user(token: str, db: Annotated[Session, Depends(get_db)]):
+    verifytoken = verify_token_access(token)
+    print(verifytoken)
+    

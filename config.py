@@ -1,4 +1,5 @@
 import secrets
+from pydantic import AnyUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -11,4 +12,29 @@ class Settings(BaseSettings):
     MODEL: str = "gpt-3.5-turbo"
     OPENAI_API_KEY: str 
 
+
+    PROJECT_NAME: str = "EAT RIGHT"
+    FRONTEND_URL: AnyUrl = "http://localhost:9000/api/v1/"
+    EMAIL_RESET_PASSWORD_EXPIRE_MINUTES: int = 10
+    EMAILS_FROM_NAME: str = "EAT RIGHT"
+    EMAILS_FROM_EMAIL: str = ""
+
+
+    SMTP_TLS: bool = True
+    SMTP_SSL: bool = False
+    SMTP_PORT: int = 2525
+    SMTP_HOST: str = 'smtp.mailtrap.io'
+    SMTP_USER: str = 'b8d6b914ed3f45'
+    SMTP_PASSWORD: str = '84a0e3214a45bd'
+
 settings = Settings() 
+
+
+
+
+# app.config['MAIL_SERVER']='sandbox.smtp.mailtrap.io'
+# app.config['MAIL_PORT'] = 2525
+# app.config['MAIL_USERNAME'] = 'b8d6b914ed3f45'
+# app.config['MAIL_PASSWORD'] = '84a0e3214a45bd'
+# app.config['MAIL_USE_TLS'] = True
+# app.config['MAIL_USE_SSL'] = False

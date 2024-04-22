@@ -88,3 +88,17 @@ class SuccessMessage(BaseModel):
 
 class Prompt(BaseModel):
     text: str
+
+
+class Message(SQLModel):
+    message: str
+
+class NewPassword(SQLModel):
+    token: str
+    new_password: str
+
+
+class UserOutput(SQLModel):
+    id: int
+    name: str
+    email: EmailStr
