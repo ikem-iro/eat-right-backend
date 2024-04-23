@@ -1,7 +1,6 @@
-from getpass import getuser
 from typing import Annotated
 from dependencies.deps import get_current_user
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session,select
 from config import settings
 from dependencies.deps import SessionDep, reusable_oauth2
@@ -12,8 +11,7 @@ Token,
 UserLogin, 
 Prompt, 
 Message, 
-NewPassword,  
-UserOutput
+NewPassword
 )
 
 from utils import (
@@ -21,7 +19,6 @@ get_password_hash,
 create_access_token, 
 authenticate, 
 is_token_revoked,
-create_reset_password_token, 
 revoke_token, 
 send_email,
 create_token,
@@ -89,7 +86,7 @@ async def login(
 
 
 
-@router.post("/delete-user")
+@router.post("/delete-user", tags=["Users"])
 async def deleteUser(
     db: SessionDep 
 ):
@@ -104,7 +101,7 @@ async def deleteUser(
 
 
 
-@router.put("/update_activity/")
+@router.put("/update_activity/", tags=["Users"])
 def update_activity(username: str, db: SessionDep):
     user = db.exec(select(User).where(User.username == username)).first()
 
@@ -117,7 +114,7 @@ def update_activity(username: str, db: SessionDep):
     db.commit()
     return {"message": "User activity updated"}
 
-@router.post("/contact-us", tags=["contact"], summary="Submit a contact us request")
+@router.post("/contact-us", tags=["Contact"], summary="Submit a contact us request")
 async def contact_us(contact: ContactUs):
     # Here you can handle the contact request, such as sending an email or saving it to a database
     # For now, let's just print the received data
@@ -128,7 +125,7 @@ async def contact_us(contact: ContactUs):
 
 
 
-@router.post("/reviews", tags=["reviews"], dependencies=[Depends(get_current_user)])
+@router.post("/reviews", tags=["Reviews"], dependencies=[Depends(get_current_user)])
 async def create_review(
     review: ReviewCreate,
     db: SessionDep
@@ -176,7 +173,7 @@ async def logout(db: SessionDep, token: str = Depends(reusable_oauth2)):
     return {"message": "Successfully logged out"}
 
 
-@router.post("/password-recovery/{email}")
+@router.post("/password-recovery/{email}", tags=["Users"])
 async def recover_password(email: str, db: Annotated[Session, Depends(get_db)]):
     "Forgot password flow"
     user = get_user_by_email(session=db, email=email)
@@ -200,7 +197,7 @@ async def recover_password(email: str, db: Annotated[Session, Depends(get_db)]):
 
 
 
-@router.post("/reset-password/")
+@router.post("/reset-password/", tags=["Users"])
 def reset_password(
     db: Annotated[Session, Depends(get_db)], body: NewPassword
 ) -> Message:
@@ -227,7 +224,7 @@ def reset_password(
 
 
 
-@router.post("/login/get-current-user")
+@router.post("/login/get-current-user", tags=["Users"])
 def get_logged_user(
     current_user: Annotated[User, Depends(get_current_user)]
 ):
@@ -236,7 +233,7 @@ def get_logged_user(
     """
     return current_user
 
-@router.post("/user_prompt")
+@router.post("/user_prompt", tags=["Users"])
 def user_prompt(text: Prompt):
     openai.api_key = settings.OPENAI_API_KEY
     prompt = text.text
@@ -250,23 +247,9 @@ def user_prompt(text: Prompt):
     message = response.choices[0].message.content
 
     return {"message": message}
-
-
-
-# @router.get('/get_auth_user')
-# async def get_the_current_user(db: Annotated[Session, Depends(get_db)], request: Request):
-#     request_header = request.headers
-#     authourisation = request_header['Authorization']
-#     token = authourisation.split(" ")[1]
-#     verifytoken = verify_token_access(token)
-    
-#     user = db.get(User, verifytoken.sub)
-#     if not user:
-#         raise HTTPException(status_code=404, detail="User not found")
-#     return user
     
 
-@router.get('/get_auth_user/{token}')
+@router.get('/get_auth_user/{token}', tags=["Users"])
 async def get_the_current_user(token: str, db: Annotated[Session, Depends(get_db)]):
     verifytoken = verify_token_access(token)
     print(verifytoken)

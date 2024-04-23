@@ -30,11 +30,3 @@ class Settings(BaseSettings):
 settings = Settings() 
 
 
-
-
-# app.config['MAIL_SERVER']='sandbox.smtp.mailtrap.io'
-# app.config['MAIL_PORT'] = 2525
-# app.config['MAIL_USERNAME'] = 'b8d6b914ed3f45'
-# app.config['MAIL_PASSWORD'] = '84a0e3214a45bd'
-# app.config['MAIL_USE_TLS'] = True
-# app.config['MAIL_USE_SSL'] = False

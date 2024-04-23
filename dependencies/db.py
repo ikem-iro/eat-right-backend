@@ -1,5 +1,4 @@
 # This module contains database-related utilities and functions.
-from typing import Generator
 from sqlmodel import Session, create_engine, SQLModel, select
 from models.user_model import User  # Update the import statement
 

@@ -2,7 +2,7 @@ from sqlmodel import Session
 from dependencies.db import engine
 from typing import Generator, Annotated
 from config import settings
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException
 from utils import verify_token_access
 from models.user_model import User
 from fastapi.security import OAuth2PasswordBearer

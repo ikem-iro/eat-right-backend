@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from routes.users_route import router
 
 
-app = FastAPI()
+app = FastAPI(title="Eat-Right", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,

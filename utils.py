@@ -3,7 +3,7 @@ This module contains utility functions for authentication and password handling.
 """
 
 from datetime import datetime, timedelta
-from typing import Any, List
+from typing import Any
 from config import settings
 from pydantic import ValidationError
 from jose import jwt, JWTError
@@ -240,8 +240,6 @@ def delete_review(db: Session, review_id: int) -> Review | None:
     return db_review
 
 
-
-# ...
 
 BLACKLISTED_TOKENS = set()
 

@@ -3,21 +3,10 @@ from pydantic import BaseModel, EmailStr, validator
 import re
 from enum import Enum
 from datetime import datetime
-import secrets
 
 class UserRole(str, Enum):
     ADMIN = "admin"
     USER = "user"
-
-
-# class UserCreate(SQLModel):
-#     first_name: str = Field(
-#         min_length=2,
-#         max_length=50,
-#         description="First Name of the User",
-#         title="First Name"
-#     )
-#     role: UserRole = UserRole.USER
 
 class UserCreate(SQLModel):
     first_name: str = Field(
@@ -70,7 +59,6 @@ class Token(SQLModel):
 
 class TokenData(SQLModel):
     sub: int | None = None
-
 
 
 class ForgetPasswordRequest(BaseModel):
