@@ -20,7 +20,7 @@ create_access_token,
 authenticate, 
 is_token_revoked,
 revoke_token, 
-send_email,
+send_mail,
 create_token,
 verify_token,
 verify_token_access,
@@ -188,7 +188,7 @@ async def recover_password(email: str, db: Annotated[Session, Depends(get_db)]):
         email_to=user.email, email=email, token=password_reset_token
     )
 
-    send_email(
+    send_mail(
         email_to=user.email,
         subject=email_data.subject,
         html_content=email_data.html_content,

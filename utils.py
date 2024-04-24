@@ -8,6 +8,8 @@ from config import settings
 from pydantic import ValidationError
 from jose import jwt, JWTError
 from models.user_model import TokenData, User
+import smtplib, ssl
+from email.message import EmailMessage
 from passlib.context import CryptContext
 from dependencies.db import get_user_by_email
 from sqlmodel import Session
@@ -378,3 +380,32 @@ def generate_reset_password_email(email_to: str, email: str, token: str):
     )
     return EmailData(html_content=html_content, subject=subject)
 
+def send_mail(email_to: str, subject: str, html_content: str):
+ 
+    port = 465
+    smtp_server = "smtp.zeptomail.com"
+    username="emailapikey"
+    password = "wSsVR613/BWjW6wozzapcbhtnFlUD1inE05/21am7XP8Gv7C/cdtkULKDAalSfAcR2c9RTNB8LwhzBoBh2cK3Nl4mQpTDSiF9mqRe1U4J3x17qnvhDzJWGhYlheJJYwNwgVon2hpFcEl+g=="
+    message = html_content
+    msg = EmailMessage()
+    msg['Subject'] = subject
+    msg['From'] = "noreply@eatright.com.ng"
+    msg['To'] = email_to
+    msg.add_alternative(message, subtype='html')
+    try:
+        if port == 465:
+            context = ssl.create_default_context()
+            with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
+                server.login(username, password)
+                server.send_message(msg)
+        elif port == 587:
+            with smtplib.SMTP(smtp_server, port) as server:
+                server.starttls()
+                server.login(username, password)
+                server.send_message(msg)
+        else:
+            print ("use 465 / 587 as port value")
+            exit()
+        print ("successfully sent")
+    except Exception as e:
+        print(e)
