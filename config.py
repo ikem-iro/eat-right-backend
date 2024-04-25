@@ -20,12 +20,12 @@ class Settings(BaseSettings):
     EMAILS_FROM_EMAIL: str = ""
 
 
-    SMTP_TLS: bool = True
-    SMTP_SSL: bool = False
-    SMTP_PORT: int = 2525
-    SMTP_HOST: str = 'smtp.mailtrap.io'
-    SMTP_USER: str = 'b8d6b914ed3f45'
-    SMTP_PASSWORD: str = '84a0e3214a45bd'
+    SMTP_PORT: int = 465
+    SMTP_ALT_PORT: int = 587
+    SMTP_SERVER: str = "smtp.zeptomail.com"
+    SMTP_USER: str = "emailapikey"
+    SMTP_PASS:str
+
 
 settings = Settings() 
 

@@ -382,10 +382,10 @@ def generate_reset_password_email(email_to: str, email: str, token: str):
 
 def send_mail(email_to: str, subject: str, html_content: str):
  
-    port = 465
-    smtp_server = "smtp.zeptomail.com"
-    username="emailapikey"
-    password = "wSsVR613/BWjW6wozzapcbhtnFlUD1inE05/21am7XP8Gv7C/cdtkULKDAalSfAcR2c9RTNB8LwhzBoBh2cK3Nl4mQpTDSiF9mqRe1U4J3x17qnvhDzJWGhYlheJJYwNwgVon2hpFcEl+g=="
+    port = settings.SMTP_PORT
+    smtp_server = settings.SMTP_SERVER
+    username= settings.SMTP_USER
+    password = settings.SMTP_PASS
     message = html_content
     msg = EmailMessage()
     msg['Subject'] = subject
@@ -393,12 +393,12 @@ def send_mail(email_to: str, subject: str, html_content: str):
     msg['To'] = email_to
     msg.add_alternative(message, subtype='html')
     try:
-        if port == 465:
+        if port == settings.SMTP_PORT:
             context = ssl.create_default_context()
             with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
                 server.login(username, password)
                 server.send_message(msg)
-        elif port == 587:
+        elif port == settings.SMTP_ALT_PORT:
             with smtplib.SMTP(smtp_server, port) as server:
                 server.starttls()
                 server.login(username, password)
