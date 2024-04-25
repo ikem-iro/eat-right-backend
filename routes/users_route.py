@@ -284,3 +284,10 @@ def user_prompt(text: Prompt, db: Annotated[Session, Depends(get_db)], current_u
     db.refresh(response_from_model)
 
     return {"message": message}
+
+
+@router.get("/get_all_prompts", tags=["Users"])
+def get_all_prompts(db: Annotated[Session, Depends(get_db)], current_user: Annotated[User, Depends(get_current_user)]):
+    user_id = current_user.id
+    prompts = db.query(ChatHistory).filter(ChatHistory.user_id == user_id).all()
+    return prompts
