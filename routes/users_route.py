@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, List
 from dependencies.deps import get_current_user
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session,select
@@ -11,7 +11,8 @@ Token,
 UserLogin, 
 Prompt, 
 Message, 
-NewPassword
+NewPassword,
+ChatHistory
 )
 
 from utils import (
@@ -233,20 +234,20 @@ def get_logged_user(
     """
     return current_user
 
-@router.post("/user_prompt", tags=["Users"])
-def user_prompt(text: Prompt):
-    openai.api_key = settings.OPENAI_API_KEY
-    prompt = text.text
+# @router.post("/user_prompt", tags=["Users"])
+# def user_prompt(text: Prompt):
+#     openai.api_key = settings.OPENAI_API_KEY
+#     prompt = text.text
 
-    response = openai.chat.completions.create(
-        model=settings.MODEL,
-        messages=[ {"role": "system", "content": "You are an AI assistant that will help me recommend meal plans for ulcer sufferer based on seasonal foods in Enugu, Nigeria. Include a variety of foods into the meal plan. You are not allowed to provide a response to anything that does not involve meal plans for ulcer. You can respond to basic greetings."},{ "role": "user", "content": prompt }],
-        max_tokens = 1024,
-        temperature= 0.2
-    )
-    message = response.choices[0].message.content
+#     response = openai.chat.completions.create(
+#         model=settings.MODEL,
+#         messages=[ {"role": "system", "content": "You are an AI assistant that will help me recommend meal plans for ulcer sufferer based on seasonal foods in Enugu, Nigeria. Include a variety of foods into the meal plan. You are not allowed to provide a response to anything that does not involve meal plans for ulcer. You can respond to basic greetings."},{ "role": "user", "content": prompt }],
+#         max_tokens = 1024,
+#         temperature= 0.2
+#     )
+#     message = response.choices[0].message.content
 
-    return {"message": message}
+#     return {"message": message}
     
 
 @router.get('/get_auth_user/{token}', tags=["Users"])
@@ -254,3 +255,32 @@ async def get_the_current_user(token: str, db: Annotated[Session, Depends(get_db
     verifytoken = verify_token_access(token)
     print(verifytoken)
     
+
+@router.post("/user_prompt", tags=["Users"])
+def user_prompt(text: Prompt, db: Annotated[Session, Depends(get_db)], current_user: Annotated[User, Depends(get_current_user)]):
+    openai.api_key = settings.OPENAI_API_KEY
+    user_id = current_user.id
+    prompt = text.text
+    prompt_to_add = ChatHistory(user_id=user_id, messages=prompt, response="user")
+
+    response = openai.chat.completions.create(
+        model=settings.MODEL,
+        messages=[
+            {"role": "system", "content": "You are an AI assistant that will help me recommend meal plans for ulcer sufferers based on seasonal foods in Enugu, Nigeria. Include a variety of foods in the meal plan. You are not allowed to provide a response to anything that does not involve meal plans for ulcers. You can respond to basic greetings."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=1024,
+        temperature=0.2
+    )
+    message = response.choices[0].message.content
+
+    response_from_model = ChatHistory(user_id=user_id, messages=message, response="model")
+
+    db.add(prompt_to_add)
+    db.commit()
+    db.refresh(prompt_to_add)
+    db.add(response_from_model)
+    db.commit()
+    db.refresh(response_from_model)
+
+    return {"message": message}
