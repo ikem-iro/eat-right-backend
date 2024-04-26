@@ -225,7 +225,7 @@ def reset_password(
 
 
 
-@router.post("/login/get-current-user", tags=["Users"])
+@router.get("/login/get-current-user", tags=["Users"])
 def get_logged_user(
     current_user: Annotated[User, Depends(get_current_user)]
 ):
@@ -234,27 +234,7 @@ def get_logged_user(
     """
     return current_user
 
-# @router.post("/user_prompt", tags=["Users"])
-# def user_prompt(text: Prompt):
-#     openai.api_key = settings.OPENAI_API_KEY
-#     prompt = text.text
 
-#     response = openai.chat.completions.create(
-#         model=settings.MODEL,
-#         messages=[ {"role": "system", "content": "You are an AI assistant that will help me recommend meal plans for ulcer sufferer based on seasonal foods in Enugu, Nigeria. Include a variety of foods into the meal plan. You are not allowed to provide a response to anything that does not involve meal plans for ulcer. You can respond to basic greetings."},{ "role": "user", "content": prompt }],
-#         max_tokens = 1024,
-#         temperature= 0.2
-#     )
-#     message = response.choices[0].message.content
-
-#     return {"message": message}
-    
-
-@router.get('/get_auth_user/{token}', tags=["Users"])
-async def get_the_current_user(token: str, db: Annotated[Session, Depends(get_db)]):
-    verifytoken = verify_token_access(token)
-    print(verifytoken)
-    
 
 @router.post("/user_prompt", tags=["Users"])
 def user_prompt(text: Prompt, db: Annotated[Session, Depends(get_db)], current_user: Annotated[User, Depends(get_current_user)]):
