@@ -1,37 +1,37 @@
 from typing import Annotated, List
 from dependencies.deps import get_current_user
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session,select
+from sqlmodel import Session, select
 from config import settings
 from dependencies.deps import SessionDep, reusable_oauth2
 from models.user_model import (
-UserCreate, 
-User, 
-Token, 
-UserLogin, 
-Prompt, 
-Message, 
-NewPassword,
-ChatHistory
+    UserCreate,
+    User,
+    Token,
+    UserLogin,
+    Prompt,
+    Message,
+    NewPassword,
+    ChatHistory
 )
 
 from utils import (
-get_password_hash, 
-create_access_token, 
-authenticate, 
-is_token_revoked,
-revoke_token, 
-send_mail,
-create_token,
-verify_token,
-verify_token_access,
-generate_reset_password_email
+    get_password_hash,
+    create_access_token,
+    authenticate,
+    is_token_revoked,
+    revoke_token,
+    send_mail,
+    create_token,
+    verify_token,
+    verify_token_access,
+    generate_reset_password_email
 )
 
 from dependencies.deps import get_db, get_current_user
 from datetime import timedelta, datetime
 from models.contact_model import ContactUs
-from models.review_model import ReviewCreate, Review    
+from models.review_model import ReviewCreate, Review
 from utils import get_user_by_email
 import openai
 
@@ -41,7 +41,7 @@ router = APIRouter(prefix="/api/v1/users")
 @router.post("/register", tags=["Authentication"])
 async def register(
     user: UserCreate,
-    db: SessionDep 
+    db: SessionDep
 ):
     # Hash the password
     user.password = get_password_hash(user.password)
@@ -51,16 +51,17 @@ async def register(
     db.refresh(new_user)
     return user
 
+
 @router.post("/login", tags=["Authentication"])
 async def login(
 
     user_data: UserLogin,
-    db: SessionDep 
+    db: SessionDep
 ):
     """
     The `login` function authenticates a user with provided credentials and returns an access token
     along with user details if successful.
-    
+
     :param user_data: The `user_data` parameter in the `login` function represents the data provided by
     the user during the login process. It is of type `UserLogin`, which likely contains the user's email
     and password for authentication
@@ -73,25 +74,26 @@ async def login(
     access token is generated using the user's ID and expires after a certain duration specified in the
     settings. The user details include the user's ID, first name, and last name.
     """
-    user = authenticate(session=db, email=user_data.email, password=user_data.password)
+    user = authenticate(session=db, email=user_data.email,
+                        password=user_data.password)
     if not user:
         raise HTTPException(status_code=404, detail=f"Invalid credentials")
 
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(
+        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     token = Token(
         access_token=create_access_token(
             user.id, expires_delta=access_token_expires
         )
     )
-    return {"access_token": token, "details": {"user_id":user.id, "user_firstname": user.first_name, "user_lastname": user.last_name}}
-
+    return {"access_token": token, "details": {"user_id": user.id, "user_firstname": user.first_name, "user_lastname": user.last_name}}
 
 
 @router.post("/delete-user", tags=["Users"])
 async def deleteUser(
-    db: SessionDep 
+    db: SessionDep
 ):
- 
+
     thirty_days_ago = datetime.utcnow() - timedelta(days=30)
     statement = select(User).where(User.last_active_date > thirty_days_ago)
     inactive_users = db.exec(statement).all()
@@ -99,7 +101,6 @@ async def deleteUser(
         db.delete(inactive_user)
         db.commit()
     return {"message": "Inactive accounts deleted", "deleted_usernames": inactive_users}
-
 
 
 @router.put("/update_activity/", tags=["Users"])
@@ -115,21 +116,23 @@ def update_activity(username: str, db: SessionDep):
     db.commit()
     return {"message": "User activity updated"}
 
+
 @router.post("/contact-us", tags=["Contact"], summary="Submit a contact us request")
 async def contact_us(contact: ContactUs):
     # Here you can handle the contact request, such as sending an email or saving it to a database
     # For now, let's just print the received data
-    print(f"Received contact request from {contact.full_name} <{contact.email}>")
+    print(f"Received contact request from {
+          contact.full_name} <{contact.email}>")
     print(f"Subject: {contact.subject}")
     print(f"Message: {contact.message}")
     return {"message": "Contact request submitted successfully"}
 
 
-
-@router.post("/reviews", tags=["Reviews"], dependencies=[Depends(get_current_user)])
+@router.post("/reviews", tags=["Reviews"])
 async def create_review(
     review: ReviewCreate,
-    db: SessionDep
+    db: SessionDep,
+    current_user: Annotated[User, Depends(get_current_user)]
 ) -> Review:
     """
     Create a new review.
@@ -141,13 +144,12 @@ async def create_review(
     Returns:
         Review: The created review.
     """
-    new_review = Review(**review.dict())
+    user_id = current_user.id
+    new_review = Review(**review.dict(), user_id=user_id)
     db.add(new_review)
     db.commit()
     db.refresh(new_review)
     return new_review
-
-
 
 
 # ...
@@ -165,12 +167,13 @@ async def logout(db: SessionDep, token: str = Depends(reusable_oauth2)):
         dict: A message indicating successful logout.
     """
     if is_token_revoked(token):
-        raise HTTPException(status_code=400, detail="Token has already been revoked")
-    
-    # Normally, you'd also invalidate refresh tokens, but for simplicity, 
+        raise HTTPException(
+            status_code=400, detail="Token has already been revoked")
+
+    # Normally, you'd also invalidate refresh tokens, but for simplicity,
     # let's just invalidate the access token.
     revoke_token(token)
-    
+
     return {"message": "Successfully logged out"}
 
 
@@ -195,7 +198,6 @@ async def recover_password(email: str, db: Annotated[Session, Depends(get_db)]):
         html_content=email_data.html_content,
     )
     return Message(message="Password recovery email sent")
-
 
 
 @router.post("/reset-password/", tags=["Users"])
@@ -223,8 +225,6 @@ def reset_password(
     return Message(message="Password updated successfully")
 
 
-
-
 @router.get("/login/get-current-user", tags=["Users"])
 def get_logged_user(
     current_user: Annotated[User, Depends(get_current_user)]
@@ -240,8 +240,6 @@ def get_logged_user(
         "last_active_date": current_user.last_active_date
     }
     return user_details_to_return
-    
-
 
 
 @router.post("/user_prompt", tags=["Users"])
@@ -249,7 +247,8 @@ def user_prompt(text: Prompt, db: Annotated[Session, Depends(get_db)], current_u
     openai.api_key = settings.OPENAI_API_KEY
     user_id = current_user.id
     prompt = text.text
-    prompt_to_add = ChatHistory(user_id=user_id, messages=prompt, response="user")
+    prompt_to_add = ChatHistory(
+        user_id=user_id, messages=prompt, response="user")
 
     response = openai.chat.completions.create(
         model=settings.MODEL,
@@ -262,7 +261,8 @@ def user_prompt(text: Prompt, db: Annotated[Session, Depends(get_db)], current_u
     )
     message = response.choices[0].message.content
 
-    response_from_model = ChatHistory(user_id=user_id, messages=message, response="model")
+    response_from_model = ChatHistory(
+        user_id=user_id, messages=message, response="model")
 
     db.add(prompt_to_add)
     db.commit()
@@ -277,5 +277,6 @@ def user_prompt(text: Prompt, db: Annotated[Session, Depends(get_db)], current_u
 @router.get("/get_user_prompts", tags=["Users"])
 def get_all_prompts(db: Annotated[Session, Depends(get_db)], current_user: Annotated[User, Depends(get_current_user)]):
     user_id = current_user.id
-    prompts = db.query(ChatHistory).filter(ChatHistory.user_id == user_id).all()
+    prompts = db.query(ChatHistory).filter(
+        ChatHistory.user_id == user_id).all()
     return prompts

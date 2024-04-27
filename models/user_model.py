@@ -1,13 +1,15 @@
 from sqlmodel import SQLModel, Field, Column, VARCHAR, JSON
-from pydantic import BaseModel, EmailStr, validator 
+from pydantic import BaseModel, EmailStr, validator
 import re
 from enum import Enum
 from datetime import datetime
 from typing import List
 
+
 class UserRole(str, Enum):
     ADMIN = "admin"
     USER = "user"
+
 
 class UserCreate(SQLModel):
     first_name: str = Field(
@@ -32,7 +34,7 @@ class UserCreate(SQLModel):
         description="Password of the user",
         title="Password"
     )
-    _regex_password = re.compile( 
+    _regex_password = re.compile(
         r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$'
     )
 
@@ -41,17 +43,21 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+
 @validator("password")
 def validate_password(cls, v):
     if not cls._regex_password.match(v):
-        raise ValueError("Password must be at least 8 characters long and contain at least one number, one uppercase letter, one lowercase letter, and one special character")
+        raise ValueError(
+            "Password must be at least 8 characters long and contain at least one number, one uppercase letter, one lowercase letter, and one special character")
     return v
+
 
 class User(UserCreate, table=True):
     id: int = Field(primary_key=True)
     is_email_verified: bool = Field(default=False)
     verification_token: str = Field(default="")
     last_active_date: datetime = Field(default_factory=datetime.utcnow)
+
 
 class Token(SQLModel):
     access_token: str
@@ -65,9 +71,11 @@ class TokenData(SQLModel):
 class ForgetPasswordRequest(BaseModel):
     email: EmailStr
 
+
 class ResestForgetPassword(BaseModel):
     token: str
     new_password: str
+
 
 class SuccessMessage(BaseModel):
     success: bool
@@ -82,6 +90,7 @@ class Prompt(BaseModel):
 class Message(SQLModel):
     message: str
 
+
 class NewPassword(SQLModel):
     token: str
     new_password: str
@@ -92,7 +101,7 @@ class UserOutput(SQLModel):
     name: str
     email: EmailStr
 
-    
+
 class ChatHistory(SQLModel, table=True):
     id: int = Field(primary_key=True)
     messages: str

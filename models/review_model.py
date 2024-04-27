@@ -13,8 +13,7 @@ class ReviewCreate(SQLModel):
         description="Rating of the review",
         title="Review Rating"
     )
+    user_id: str = Field(default=None)
 
-class Review(SQLModel, table=True):
+class Review(ReviewCreate, table=True):
     id: int = Field(primary_key=True)
-    content: str
-    rating: int

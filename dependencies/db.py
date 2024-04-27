@@ -3,7 +3,6 @@ from sqlmodel import Session, create_engine, SQLModel, select
 from models.user_model import User  # Update the import statement
 
 
-
 # Database configuration
 
 sqlite_file_name = "database.db"
