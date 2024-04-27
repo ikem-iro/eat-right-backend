@@ -232,7 +232,15 @@ def get_logged_user(
     """
     Test access token
     """
-    return current_user
+    user_details_to_return = {
+        "id": current_user.id,
+        "first_name": current_user.first_name,
+        "last_name": current_user.last_name,
+        "email": current_user.email,
+        "last_active_date": current_user.last_active_date
+    }
+    return user_details_to_return
+    
 
 
 
