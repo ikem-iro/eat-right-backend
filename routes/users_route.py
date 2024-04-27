@@ -152,6 +152,28 @@ async def create_review(
     return new_review
 
 
+@router.get("/reviews", tags=["Reviews"], response_model=List[Review])
+async def get_user_reviews(current_user: Annotated[User, Depends(get_current_user)], db: Annotated[Session, Depends(get_db)]):
+    """
+    Get reviews by user ID.
+
+    Args:
+        user_id (int): The ID of the user whose reviews need to be retrieved.
+        current_user (User, optional): The current authenticated user. Defaults to Depends(get_current_user).
+        db (SessionDep, optional): The database session. Defaults to Depends().
+
+    Returns:
+        List[Review]: A list of reviews associated with the specified user ID.
+    """
+    # Check if the current user is authorized to access the reviews
+    user_id = current_user.id
+
+    # Query the database for reviews associated with the user ID
+    reviews = db.exec(select(Review).where(Review.user_id == user_id)).all()
+    
+    return reviews
+
+
 # ...
 
 @router.post("/logout", tags=["Authentication"])
