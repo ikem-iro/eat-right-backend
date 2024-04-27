@@ -1,6 +1,7 @@
 # This module contains database-related utilities and functions.
 from sqlmodel import Session, create_engine, SQLModel, select
 from models.user_model import User  # Update the import statement
+from models.review_model import Review
 
 
 # Database configuration

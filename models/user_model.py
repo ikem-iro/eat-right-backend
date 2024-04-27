@@ -103,7 +103,7 @@ class UserOutput(SQLModel):
 
 
 class ChatHistory(SQLModel, table=True):
-    id: int = Field(primary_key=True)
+    id: int = Field(default= None, primary_key=True)
     messages: str
     user_id: int  # Foreign key to the User table
     response: str
