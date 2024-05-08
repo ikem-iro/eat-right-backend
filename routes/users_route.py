@@ -24,7 +24,6 @@ from utils import (
     send_mail,
     create_token,
     verify_token,
-    verify_token_access,
     generate_reset_password_email
 )
 
@@ -43,7 +42,7 @@ async def register(
     user: UserCreate,
     db: SessionDep
 ):
-    # Hash the password
+    
     user.password = get_password_hash(user.password)
     new_user = User(**user.dict())
     db.add(new_user)
@@ -119,8 +118,6 @@ def update_activity(username: str, db: SessionDep):
 
 @router.post("/contact-us", tags=["Contact"], summary="Submit a contact us request")
 async def contact_us(contact: ContactUs):
-    # Here you can handle the contact request, such as sending an email or saving it to a database
-    # For now, let's just print the received data
     print(f"Received contact request from {
           contact.full_name} <{contact.email}>")
     print(f"Subject: {contact.subject}")
@@ -165,16 +162,12 @@ async def get_user_reviews(current_user: Annotated[User, Depends(get_current_use
     Returns:
         List[Review]: A list of reviews associated with the specified user ID.
     """
-    # Check if the current user is authorized to access the reviews
     user_id = current_user.id
 
-    # Query the database for reviews associated with the user ID
     reviews = db.exec(select(Review).where(Review.user_id == user_id)).all()
     
     return reviews
 
-
-# ...
 
 @router.post("/logout", tags=["Authentication"])
 async def logout(db: SessionDep, token: str = Depends(reusable_oauth2)):
@@ -191,9 +184,7 @@ async def logout(db: SessionDep, token: str = Depends(reusable_oauth2)):
     if is_token_revoked(token):
         raise HTTPException(
             status_code=400, detail="Token has already been revoked")
-
-    # Normally, you'd also invalidate refresh tokens, but for simplicity,
-    # let's just invalidate the access token.
+    
     revoke_token(token)
 
     return {"message": "Successfully logged out"}
@@ -209,7 +200,6 @@ async def recover_password(email: str, db: Annotated[Session, Depends(get_db)]):
 
     password_reset_token = create_token(subject=email, type_ops="reset")
 
-    # create email data
     email_data = generate_reset_password_email(
         email_to=user.email, email=email, token=password_reset_token
     )
@@ -238,8 +228,7 @@ def reset_password(
             status_code=404,
             detail="The user with this email does not exist in the system.",
         )
-    # elif not user.is_active:
-    #     raise HTTPException(status_code=400, detail="Inactive user")
+
     hashed_password = get_password_hash(password=body.new_password)
     user.password = hashed_password
     db.add(user)

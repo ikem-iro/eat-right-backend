@@ -1,9 +1,8 @@
-from sqlmodel import SQLModel, Field, Column, VARCHAR, JSON
+from sqlmodel import SQLModel, Field, Column, VARCHAR
 from pydantic import BaseModel, EmailStr, validator
 import re
 from enum import Enum
 from datetime import datetime
-from typing import List
 
 
 class UserRole(str, Enum):
@@ -105,6 +104,6 @@ class UserOutput(SQLModel):
 class ChatHistory(SQLModel, table=True):
     id: int = Field(default= None, primary_key=True)
     messages: str
-    user_id: int  # Foreign key to the User table
+    user_id: int  
     response: str
     created_at: datetime = Field(default_factory=datetime.now, nullable=False)

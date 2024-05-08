@@ -21,7 +21,7 @@ from jinja2 import Template
 from sqlmodel import select
 from dataclasses import dataclass
 from pathlib import Path
-# Initialize the password context for hashing and verifying passwords
+
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated="auto")
 
 def create_access_token(subject: str | Any, expires_delta: timedelta) -> str:
@@ -342,7 +342,7 @@ def verify_token(token: str) -> str | None:
     try:
         decoded_token = jwt.decode(
             token, settings.SECRET_KEY, algorithms=settings.ALGORITHM
-        )  # noqa
+        )  
         print(decoded_token, "decoded_token")
         return str(decoded_token["sub"])
     except JWTError:

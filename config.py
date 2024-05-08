@@ -11,7 +11,6 @@ class Settings(BaseSettings):
     RESET_PASSWORD: str = secrets.token_urlsafe(32)
     MODEL: str = "gpt-3.5-turbo"
     OPENAI_API_KEY: str 
-    # PORT = 465
 
     PROJECT_NAME: str = "EAT RIGHT"
     FRONTEND_URL: AnyUrl = "http://localhost:9000/api/v1/"
